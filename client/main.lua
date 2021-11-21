@@ -6,6 +6,7 @@ AddEventHandler('communityservice:setplayerincomserv', function(amount_tasks)
 
 
     if hascompservleft ~= true then 
+        TpPlayerToLegion()
         StartService(amount_tasks)
     else 
         print('this player has community service already!')
@@ -30,7 +31,21 @@ local taskTable = {
 
 } 
 
+function TpPlayerToLegion()
 
+    local player = PlayerPedId()
+    DoScreenFadeOut(1000)
+
+    while not IsScreenFadedOut() do
+        Wait(100)
+    end
+
+    SetEntityCoords(player, -662.69, -343.63, 61.29) -- do this just in case someone is in legion already
+    Wait(500)
+    SetEntityCoords(player, 187.06, -935.01, 30.69)
+    DoScreenFadeIn(1000)
+
+end
 
 function StartService(amount_tasks)
     hascompservleft = true
