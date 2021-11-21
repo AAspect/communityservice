@@ -16,7 +16,7 @@ local availibleTasks = {}
 
 
 local taskTable = {
-    { id = 'dirtywall1', description = "cleaningdirtywall", text = 'Dirt Wall', textColor = {139,69,19}, task = 'clean', coords = vector3(181.5283, -941.976, 30.5967) },
+    { id = 'dirtywall1', description = "cleaningdirtywall", text = 'Dirty Wall', textColor = {139,69,19}, task = 'clean', coords = vector3(181.5, -941.9, 30.5) },
     { id = 'dirtywall2', description = "cleaningdirtywall", text = 'Dirty Wall', textColor = {139,69,19}, task = 'clean', coords = vector3(193.0, -957.3, 31.1) },
     { id = 'dirtywall3', description = "cleaningdirtywall", text = 'Dirty Wall', textColor = {139,69,19}, task = 'clean', coords = vector3(199.6, -951.1, 30.4) },
     { id = 'dirtywall4', description = "cleaningdirtywall", text = 'Dirty Wall', textColor = {139,69,19}, task = 'clean', coords = vector3(205.4, -996.1, 29.7) },
@@ -24,6 +24,7 @@ local taskTable = {
     { id = 'dirtywall6', description = "cleaningdirtywall", text = 'Dirty Wall', textColor = {139,69,19}, task = 'clean', coords = vector3(156.3, -944.8, 30.2) },
 
 
+    { id = 'dirtyfloor1', description = "cleaningdirtyfloor", text = 'Dirty Floor', textColor = {139,69,19}, task = 'clean', coords = vector3(188.1, -924.6, 30.0) },
 
 
 
@@ -50,6 +51,12 @@ function DoTask(taskid)
         local value = taskTable[i]
         if value.id == taskid then
             table.remove(availibleTasks, i)
+            for k, v in ipairs(taskTable) do
+                if v.id == taskid then
+                    Wait(1000)
+                    table.insert(availibleTasks, v)
+                end
+            end
             tasksLeft = tasksLeft - 1
             if tasksLeft == 0 then 
                 EndService()
@@ -58,47 +65,28 @@ function DoTask(taskid)
     end
 end
 
-RegisterCommand('stopservice', function()
-    EndService()    
-end)
-
-RegisterCommand('test2', function()
-    print(json.encode(availibleTasks))
-end)
-
 function EndService()
     hascompservleft = false
     print('you have no more community service left!')
 end
 
-DrawScene = function(x, y, z, text, color)
-    if not text or not color or not x or not y or not z then return end
-    local onScreen, gx, gy = GetScreenCoordFromWorldCoord(x, y, z)
-    local dist = #(GetGameplayCamCoord() - vector3(x, y, z))
-    
-    local scale = ((1 / dist) * 2) * (1 / GetGameplayCamFov()) * 200
-
-    if onScreen then
-        BeginTextCommandDisplayText("STRING")
-        AddTextComponentSubstringKeyboardDisplay(text)
-        SetTextColour(color[1], color[2], color[3], 255)
-        SetTextScale(0.0 * scale, 0.50 * scale)
-        SetTextFont(0)
-        SetTextCentre(1)
-        SetTextDropshadow(1, 0, 0, 0, 155)
-        EndTextCommandDisplayText(gx, gy)
-        
-        local height = GetTextScaleHeight(1 * scale, 0) - 0.005
-        local length = string.len(text)
-        local limiter = 120
-        if length > 98 then
-            length = 98
-            limiter = 200
-        end
-        local width = length / limiter * scale
-        DrawRect(gx, (gy + scale / 50), width, height, 0, 0, 0, 90)
+local function DrawText3D(x, y, z, text, color)
+    local onScreen,_x,_y=World3dToScreen2d(x,y,z)
+    if onScreen then 
+        SetTextScale(0.35, 0.35)
+        SetTextFont(4)
+        SetTextProportional(1)
+        SetTextColour(color[1], color[2], color[3], 215)
+        SetTextEntry("STRING")
+        SetTextCentre(true)
+        AddTextComponentString(text)
+        SetDrawOrigin(x,y,z, 0)
+        SetTextDropshadow(1, 0, 0, 0, 255)
+        DrawText(0.0, 0.0)
+        local factor = (string.len(text)) / 370
+        DrawRect(0.0, 0.0+0.0125, 0.017+ factor, 0.03, 0, 0, 0, 75)
+        ClearDrawOrigin()
     end
-
 end
 
 
@@ -126,7 +114,7 @@ legion_square:onPlayerInOut(function(isPointInside)
     
     
                 if dist <= 15.0 then
-                    DrawScene(v.coords['x'],v.coords['y'],v.coords['z'], 'test', v.textColor)
+                    DrawText3D(v.coords['x'],v.coords['y'],v.coords['z'], v.text, v.textColor)
                     if dist <= 2.0 then
                         if IsControlJustPressed(0, 38) then 
                             DoTask(v.id)
@@ -141,3 +129,4 @@ legion_square:onPlayerInOut(function(isPointInside)
     end
 
 end)
+
