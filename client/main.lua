@@ -1,147 +1,149 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
-local hascompservleft = false
-RegisterNetEvent('communityservice:setplayerincomserv')
-AddEventHandler('communityservice:setplayerincomserv', function(amount_tasks)
-
-
-    if hascompservleft ~= true then 
-        TpPlayerToLegion()
-        StartService(amount_tasks)
-    else 
-        print('this player has community service already!')
-    end
-end)
-local tasksLeft = nil
-local availibleTasks = {}
-
-
-local taskTable = {
-    { id = 'dirtywall1', description = "cleaningdirtywall", text = 'Dirty Wall', textColor = {139,69,19}, task = 'clean', coords = vector3(181.5, -941.9, 30.5) },
-    { id = 'dirtywall2', description = "cleaningdirtywall", text = 'Dirty Wall', textColor = {139,69,19}, task = 'clean', coords = vector3(193.0, -957.3, 31.1) },
-    { id = 'dirtywall3', description = "cleaningdirtywall", text = 'Dirty Wall', textColor = {139,69,19}, task = 'clean', coords = vector3(199.6, -951.1, 30.4) },
-    { id = 'dirtywall4', description = "cleaningdirtywall", text = 'Dirty Wall', textColor = {139,69,19}, task = 'clean', coords = vector3(205.4, -996.1, 29.7) },
-    { id = 'dirtywall5', description = "cleaningdirtywall", text = 'Dirty Wall', textColor = {139,69,19}, task = 'clean', coords = vector3(149.5, -954.9, 30.6) },
-    { id = 'dirtywall6', description = "cleaningdirtywall", text = 'Dirty Wall', textColor = {139,69,19}, task = 'clean', coords = vector3(156.3, -944.8, 30.2) },
-
-
-    { id = 'dirtyfloor1', description = "cleaningdirtyfloor", text = 'Dirty Floor', textColor = {139,69,19}, task = 'clean', coords = vector3(188.1, -924.6, 30.0) },
-
-
-
-} 
-
-function TpPlayerToLegion()
-
-    local player = PlayerPedId()
-    DoScreenFadeOut(1000)
-
-    while not IsScreenFadedOut() do
-        Wait(100)
-    end
-
-    SetEntityCoords(player, -662.69, -343.63, 61.29) -- do this just in case someone is in legion already
-    Wait(500)
-    SetEntityCoords(player, 187.06, -935.01, 30.69)
-    DoScreenFadeIn(1000)
-
-end
-
-function StartService(amount_tasks)
-    hascompservleft = true
-    AddTasksToTable()
-    tasksLeft = amount_tasks
-end
-
-
-
-function AddTasksToTable()
-    for k, v in ipairs(taskTable) do
-        table.insert(availibleTasks, v)
-    end
-end
-
-function DoTask(taskid)
-    for i = 1, #taskTable do
-        local value = taskTable[i]
-        if value.id == taskid then
-            table.remove(availibleTasks, i)
-            for k, v in ipairs(taskTable) do
-                if v.id == taskid then
-                    Wait(1000)
-                    table.insert(availibleTasks, v)
-                end
+local isInComserv = false
+local comservdone = false
+local TasksRemaining = 0
+local availableActions = {}
+  
+TaskLocations = {
+    { type = "sweep", coords = vector3(174.8, -989.2, 29.1), text = 'Dirty Floor, sweep it up!', textColor = {255, 255, 255} },
+	{ type = "sweep", coords = vector3(162.5, -980.5, 29.1), text = 'Dirty Floor, sweep it up!', textColor = {255, 255, 255} },
+	{ type = "sweep", coords = vector3(156.2, -985.3, 29.1), text = 'Dirty Floor, sweep it up!', textColor = {255, 255, 255} },
+	{ type = "sweep", coords = vector3(145.2, -993.8, 28.4), text = 'Dirty Floor, sweep it up!', textColor = {255, 255, 255} },
+	{ type = "sweep", coords = vector3(200.1, -1017.2, 28.3), text = 'Dirty Floor, sweep it up!', textColor = {255, 255, 255} },
+	{ type = "clean", coords = vector3(173.0, -1007.7, 29.4), text = 'Dirty Meeter, Scrub it with a cloth!', textColor = {255, 255, 255} },
+	{ type = "clean", coords = vector3(175.6, -986.0, 31.0), text = 'Dirty Wall, wipe it down!', textColor = {255, 255, 255} },
+}
+  
+FillTasksArray = function(last_action)
+    while #availableActions < 1 do
+        local task_not_exist = true
+        local random_selection = TaskLocations[math.random(1,#TaskLocations)]
+        for i = 1, #availableActions do
+            if random_selection.coords == availableActions[i].coords then 
+                task_not_exist = false
             end
-            tasksLeft = tasksLeft - 1
-            if tasksLeft == 0 then 
-                EndService()
-            end
+        end
+        if last_action ~= nil and random_selection.coords == last_action.coords then
+            task_not_exist = false
+        end
+        if task_not_exist then
+            table.insert(availableActions, random_selection)
         end
     end
 end
-
-function EndService()
-    hascompservleft = false
-    print('you have no more community service left!')
-end
-
-local function DrawText3D(x, y, z, text, color)
-    local onScreen,_x,_y=World3dToScreen2d(x,y,z)
-    if onScreen then 
-        SetTextScale(0.35, 0.35)
-        SetTextFont(4)
-        SetTextProportional(1)
-        SetTextColour(color[1], color[2], color[3], 215)
-        SetTextEntry("STRING")
-        SetTextCentre(true)
-        AddTextComponentString(text)
-        SetDrawOrigin(x,y,z, 0)
-        SetTextDropshadow(1, 0, 0, 0, 255)
-        DrawText(0.0, 0.0)
-        local factor = (string.len(text)) / 370
-        DrawRect(0.0, 0.0+0.0125, 0.017+ factor, 0.03, 0, 0, 0, 75)
-        ClearDrawOrigin()
+  
+RegisterNetEvent('communityservice:client:assignService')
+AddEventHandler('communityservice:client:assignService', function(actions_remaining)
+    if isInComserv then
+        return
     end
-end
+    TasksRemaining = actions_remaining
+    FillTasksArray()
+    SetEntityCoords(PlayerPedId(), 156.08, -984.89, 30.09)
+    isInComserv = true
+    comservdone = false
 
-
-local legion_square = PolyZone:Create({
-    vector2(212.05163574219, -1027.6115722656),
-    vector2(269.73852539062, -868.36657714844),
-    vector2(186.45692443848, -837.44067382812),
-    vector2(180.47364807129, -836.68640136719),
-    vector2(124.11971282959, -989.26965332031),
-    vector2(122.27320861816, -995.49749755859)
-  }, {
-    name="legion_square",
-    --minZ = 28.949378967285,
-    --maxZ = 31.263444900513
-  })
+end)
   
   
-legion_square:onPlayerInOut(function(isPointInside)
-    if isPointInside and hascompservleft then
-        while hascompservleft do
-            Wait(0)
-            for k, v in ipairs(availibleTasks) do
-                plycoords = GetEntityCoords(PlayerPedId())
-                local dist = #(plycoords - v.coords)
-    
-    
-                if dist <= 15.0 then
-                    DrawText3D(v.coords['x'],v.coords['y'],v.coords['z'], v.text, v.textColor)
-                    if dist <= 2.0 then
-                        if IsControlJustPressed(0, 38) then 
-                            DoTask(v.id)
-                        end 
+RegisterNetEvent('communityservice:client:finishService')
+AddEventHandler('communityservice:client:finishService', function(source)
+    Notification('You have no more tasks left! You are free!')
+    comservdone = true
+    isInComserv = false
+    TasksRemaining = 0
+end)
+
+Citizen.CreateThread(function()
+    while true do
+        :: restart_thread ::
+        Citizen.Wait(1)
+
+        if TasksRemaining > 0 and isInComserv then
+            local pCoords = GetEntityCoords(PlayerPedId())
+        
+
+            DrawAllAvailableTasks()
+
+
+            for i = 1, #availableActions do
+                local dist = #(pCoords - availableActions[i].coords)
+
+                if dist < 1.5 then
+                    if(IsControlJustReleased(1, 38))then
+                        task_inProgress = availableActions[i]
+                        RemoveTask(task_inProgress)
+                        FillTasksArray(task_inProgress)
+                        disable_actions = false
+
+                        TasksRemaining = TasksRemaining - 1
+
+                        if TasksRemaining == 0 then 
+                            TriggerServerEvent('communityservice:server:finishService')
+                        elseif TasksRemaining ~= 0 then 
+                            Notification("You have: " .. TasksRemaining .. ' lasks left')
+                            TriggerServerEvent('communityservice:updateTasks', TasksRemaining)
+                        end
+        
+                        goto restart_thread
                     end
                 end
             end
-    
+        else
+            Citizen.Wait(1000)
         end
-    elseif hascompservleft and not isPointInside then 
-        print('adding service, dont leave :)')
     end
-
 end)
 
+RemoveTask = function(action)
+    local action_position = -1
+    for i=1, #availableActions do
+        if action.coords == availableActions[i].coords then
+            action_position = i
+        end
+    end
+    if action_position ~= -1 then
+        table.remove(availableActions, action_position)
+    end
+end
+  
+DrawScene = function(x, y, z, text, color)
+    if not text or not color or not x or not y or not z then return end
+    local onScreen, gx, gy = GetScreenCoordFromWorldCoord(x, y, z)
+    local dist = #(GetGameplayCamCoord() - vector3(x, y, z))
+    
+    local scale = ((1 / dist) * 2) * (1 / GetGameplayCamFov()) * 200
+    if onScreen then
+        BeginTextCommandDisplayText("STRING")
+        AddTextComponentSubstringKeyboardDisplay(text)
+        SetTextColour(color[1], color[2], color[3], 255)
+        SetTextScale(0.0 * scale, 0.50 * scale)
+        SetTextFont(0)
+        SetTextCentre(1)
+        SetTextDropshadow(1, 0, 0, 0, 155)
+        EndTextCommandDisplayText(gx, gy)
+        
+        local height = GetTextScaleHeight(1 * scale, 0) - 0.005
+        local length = string.len(text)
+        local limiter = 120
+        if length > 98 then
+            length = 98
+            limiter = 200
+        end
+        local width = length / limiter * scale
+        DrawRect(gx, (gy + scale / 50), width, height, 0, 0, 0, 90)
+    end
+    
+end
+
+
+DrawAllAvailableTasks = function()
+    for k,v in ipairs(availableActions) do
+        DrawScene(v.coords.x, v.coords.y, v.coords.z, v.text, v.textColor)
+    end
+end
+
+Notification = function(msg)
+    QBCore.Functions.Notify(msg, 'primary', 5000)
+end
