@@ -44,7 +44,7 @@ CheckIfHasCommunityService = function(Player)
     if not result[1] then
         return false
     elseif result[1] then
-        return {true, result.taskAmount}
+        return {true, result[1].taskAmount}
     end
 
 end
@@ -90,6 +90,25 @@ UpdatePlayerCommunityService = function(playerId, newTaskAmount)
     end
 end
 
+AddCommunityService = function(playerId, taskstoAdd)
+    
+    local Player = QBCore.Functions.GetPlayer(playerId)
+    if Player then 
+        if CheckIfHasCommunityService(Player) then 
+            newTasksAmount = CheckIfHasCommunityService(Player)[2] + taskstoAdd
+            TriggerClientEvent('client:communityservice:updateTaskamount', playerId, newTasksAmount)
+            exports.oxmysql:execute('UPDATE player_communityservice SET taskAmount = ? WHERE citizenid = ?', {newTasksAmount, Player.PlayerData.citizenid})
+        end
+    else
+        print('invalid player id')
+    end
+end
+
+RegisterServerEvent('communityservice:addTasks')
+AddEventHandler('communityservice:addTasks', function(tasks)
+    AddCommunityService(source, tonumber(tasks))
+end)
+
 
 RegisterServerEvent('communityservice:updateTasks')
 AddEventHandler('communityservice:updateTasks', function(tasks)
@@ -100,16 +119,6 @@ RegisterServerEvent('communityservice:server:finishService')
 AddEventHandler('communityservice:server:finishService', function()
     RemovePlayerCommunityService(source)
 end)
-
-RegisterServerEvent('communityservice:checkPlayerCommunityService')
-AddEventHandler('communityservice:checkPlayerCommunityService', function()
-    local _source = source
-    print(json.encode(CheckIfHasCommunityService(_source)[2]))
-    -- if (json.encode(CheckIfHasCommunityService(source))[2]) then
-        --  print('PUT IN SERVICE LELS')
-    -- end
-end)
-
 
 QBCore.Functions.CreateCallback('communityservice:checkData', function(source, cb)
     local Player = QBCore.Functions.GetPlayer(source)

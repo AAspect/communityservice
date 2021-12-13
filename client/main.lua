@@ -49,69 +49,114 @@ AddEventHandler('communityservice:client:assignService', function(actions_remain
     end
     TasksRemaining = actions_remaining
     FillTasksArray()
-    SetEntityCoords(PlayerPedId(), 156.08, -984.89, 30.09)
+    ReadyPlayer()
     isInComserv = true
     comservdone = false
 
 end)
-  
-  
-RegisterNetEvent('communityservice:client:finishService')
-AddEventHandler('communityservice:client:finishService', function(source)
-    Notification('You have no more tasks left! You are free!')
-    comservdone = true
-    isInComserv = false
-    TasksRemaining = 0
-end)
 
-Citizen.CreateThread(function()
-    while true do
-        :: restart_thread ::
-        Citizen.Wait(1)
+ReadyPlayer = function()
+    DoScreenFadeOut(500)
+    Wait(500)
+    SetEntityCoords(PlayerPedId(), 135.81, -1051.79, 62.27) -- BECAUSE POLYZONE IS DUMB(tp them away just incase they are already inside of legion)
+    Wait(500)
+    DoScreenFadeIn(500)
+    SetEntityCoords(PlayerPedId(), 156.08, -984.89, 30.09)
+end
+ 
+local legion_square = PolyZone:Create({
+    vector2(115.41569519043, -997.3818359375),
+    vector2(211.40739440918, -1031.7380371094),
+    vector2(270.89175415039, -868.08923339844),
+    vector2(185.6768951416, -835.48461914062),
+    vector2(181.07876586914, -833.19927978516)
+    }, {
+    name="legion_square",
+})
 
-        if TasksRemaining > 0 and isInComserv then
-            local pCoords = GetEntityCoords(PlayerPedId())
-        
+legion_square:onPlayerInOut(function(isPointInside)
+    if isPointInside and isInComserv then
+        isinLegion = true
+        CreateThread(function()
+            while isinLegion do
+                :: restart_thread ::
+                Citizen.Wait(1)
 
-            DrawAllAvailableTasks()
+                if TasksRemaining > 0 and isInComserv then
+                    local pCoords = GetEntityCoords(PlayerPedId())
+                
+
+                    DrawAllAvailableTasks()
 
 
-            for i = 1, #availableActions do
-                local dist = #(pCoords - availableActions[i].coords)
+                    for i = 1, #availableActions do
+                        local dist = #(pCoords - availableActions[i].coords)
 
-                if dist < 1.5 then
-                    if(IsControlJustReleased(1, 38))then
-                        task_inProgress = availableActions[i]
-                        RemoveTask(task_inProgress)
-                        FillTasksArray(task_inProgress)
-                        disable_actions = false
-                        
-                        DoTask(task_inProgress.type)
-                        Wait(5000)
-                        TasksRemaining = TasksRemaining - 1
+                        if dist < 1.5 then
+                            if(IsControlJustReleased(1, 38))then
+                                task_inProgress = availableActions[i]
+                                RemoveTask(task_inProgress)
+                                FillTasksArray(task_inProgress)
+                                disable_actions = false
+                                
+                                DoTask(task_inProgress.type)
+                                Wait(5000) -- Amount of time the task takes
+                                TasksRemaining = TasksRemaining - 1
 
-                        if TasksRemaining == 0 then 
-                            TriggerEvent('client:communityservice:finishService')
-                            Notification("You have done all of your tasks! Your Finished!")
-                        elseif TasksRemaining ~= 0 then 
-                            Notification("You have: " .. TasksRemaining .. ' lasks left, Go find your next task!')
-                            TriggerServerEvent('communityservice:updateTasks', TasksRemaining)
+                                if TasksRemaining == 0 then 
+                                    TriggerEvent('client:communityservice:finishService')
+                                    Notification("You have done all of your tasks! Your Finished!")
+                                elseif TasksRemaining ~= 0 then 
+                                    Notification("You have: " .. TasksRemaining .. ' lasks left, Go find your next task!')
+                                    TriggerServerEvent('communityservice:updateTasks', TasksRemaining)
+                                end
+                
+                                goto restart_thread
+                            end
                         end
-        
-                        goto restart_thread
                     end
+                else
+                    Citizen.Wait(1000)
                 end
             end
-        else
-            Citizen.Wait(1000)
-        end
+        end)
+    elseif not isPointInside and isInComserv then 
+        
+        isinLegion = false
+
+        CreateThread(function()
+            while not isinLegion do 
+                Wait(10000)
+                print('ADD COMMUNITY SERVICE BCUZ THEY LEFT')
+                if not isinLegion then 
+                    TriggerServerEvent('communityservice:addTasks', 5)
+                end
+            end
+        
+        end)
+
     end
 end)
+
+
+RegisterNetEvent('client:communityservice:updateTaskamount')
+AddEventHandler('client:communityservice:updateTaskamount', function(newTasksAmount)
+    TasksRemaining = newTasksAmount
+    Notification('Due to you leaving community service, police have been alerted and you now have ' .. newTasksAmount ..  ' tasks left!')
+    NotifyPolice()
+end)
+
+NotifyPolice = function()
+
+    print('notify police')
+end
+
 
 RegisterNetEvent('client:communityservice:finishService')
 AddEventHandler('client:communityservice:finishService', function()
     TasksRemaining = 0
     isInComserv = false
+    comservdone = true
     TriggerServerEvent('communityservice:server:finishService')
 end)
 
