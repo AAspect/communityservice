@@ -111,6 +111,7 @@ end)
 RegisterNetEvent('client:communityservice:finishService')
 AddEventHandler('client:communityservice:finishService', function()
     TasksRemaining = 0
+    isInComserv = false
     TriggerServerEvent('communityservice:server:finishService')
 end)
 
@@ -208,7 +209,7 @@ RemoveTask = function(action)
     end
 end
   
-DrawScene = function(x, y, z, text, color)
+DrawTask = function(x, y, z, text, color)
     if not text or not color or not x or not y or not z then return end
     local onScreen, gx, gy = GetScreenCoordFromWorldCoord(x, y, z)
     local dist = #(GetGameplayCamCoord() - vector3(x, y, z))
@@ -240,7 +241,7 @@ end
 
 DrawAllAvailableTasks = function()
     for k,v in ipairs(availableActions) do
-        DrawScene(v.coords.x, v.coords.y, v.coords.z, v.text, v.textColor)
+        DrawTask(v.coords.x, v.coords.y, v.coords.z, v.text, v.textColor)
     end
 end
 
