@@ -12,33 +12,16 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
--- Dumping structure for table qbcoreframework_b55816.player_vehicles
-CREATE TABLE IF NOT EXISTS `player_vehicles` (
+-- Dumping structure for table qbcoreframework_b55816.player_communityservice
+CREATE TABLE IF NOT EXISTS `player_communityservice` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `license` varchar(50) DEFAULT NULL,
   `citizenid` varchar(50) DEFAULT NULL,
-  `vehicle` varchar(50) DEFAULT NULL,
-  `hash` varchar(50) DEFAULT NULL,
-  `mods` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-  `plate` varchar(50) NOT NULL,
-  `fakeplate` varchar(50) DEFAULT NULL,
-  `garage` varchar(50) DEFAULT NULL,
-  `fuel` int(11) DEFAULT 100,
-  `engine` float DEFAULT 1000,
-  `body` float DEFAULT 1000,
-  `state` int(11) DEFAULT 1,
-  `depotprice` int(11) NOT NULL DEFAULT 0,
-  `drivingdistance` int(50) DEFAULT NULL,
-  `status` text DEFAULT NULL,
-  `balance` int(11) NOT NULL DEFAULT 0,
-  `paymentamount` int(11) NOT NULL DEFAULT 0,
-  `paymentsleft` int(11) NOT NULL DEFAULT 0,
-  `financetime` int(11) NOT NULL DEFAULT 0,
+  `taskAmount` int(11) DEFAULT 0,
   PRIMARY KEY (`id`),
-  KEY `plate` (`plate`),
   KEY `citizenid` (`citizenid`),
   KEY `license` (`license`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8;
 
 -- Data exporting was unselected.
 
