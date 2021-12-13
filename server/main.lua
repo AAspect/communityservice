@@ -1,91 +1,123 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
-QBCore.Commands.Add('comserv', 'Sentance someone to community service', {{name='message', help='Sentance someone to community service'}}, false, function(source, args)
+QBCore.Commands.Add('comserv', 'Sentance someone to community service', {{name='serverid', help='Persons Server Id'}, {name='amount', help='The amount of tasks you want the person to do'}}, false, function(source, args)
 	local src = source
     local ped = GetPlayerPed(src)
     local players = QBCore.Functions.GetQBPlayers()
     for k,v in pairs(players) do
         if v.PlayerData.job.name == 'police' and v.PlayerData.job.onduty then
-			SentanceCommunityService(tonumber(args[1]), tonumber(args[2]))
-			
+			SentancePlayerToCommunityService(tonumber(args[1]), tonumber(args[2]))
+
+
         end
     end
 end)
 
-QBCore.Commands.Add('removeservice', 'Remove Someones Community Service', {{name='message', help='Remove Someones Community Service'}}, false, function(source, args)
+QBCore.Commands.Add('removeservice', 'Remove players community service', {{name='serverid', help='Persons Server Id'}}, false, function(source, args)
 	local src = source
     local ped = GetPlayerPed(src)
     local players = QBCore.Functions.GetQBPlayers()
     for k,v in pairs(players) do
         if v.PlayerData.job.name == 'police' and v.PlayerData.job.onduty then
-			local Ply = Player(tonumber(args[1]))
-			if Ply.state.hasTasksLeft then 
+			RemovePlayerCommunityService(tonumber(args[1]))
+            TriggerClientEvent('client:communityservice:finishService', src)
 
-				ReleaseFromService(tonumber(args[1]))
-			end
         end
     end
 end)
 
-
-QBCore.Commands.Add('checkservicetime', 'Check Someones Community Service', {{name='message', help='Check Someones Community Service'}}, false, function(source, args)
+QBCore.Commands.Add('updatecomserv', 'Update players community service tasks', {{name='serverid', help='Persons Server Id'}, {name='amount', help='The amount of tasks you want the person to do'}}, false, function(source, args)
 	local src = source
     local ped = GetPlayerPed(src)
     local players = QBCore.Functions.GetQBPlayers()
     for k,v in pairs(players) do
         if v.PlayerData.job.name == 'police' and v.PlayerData.job.onduty then
-			local Ply = Player(tonumber(args[1]))
-			print(json.encode(Ply.state.hasTasksLeft))
+			UpdatePlayerCommunityService(tonumber(args[1]), tonumber(args[2]))
+
+
         end
     end
 end)
 
+CheckIfHasCommunityService = function(Player)
+    local result = exports.oxmysql:executeSync('SELECT * FROM player_communityservice WHERE citizenid = ?', { Player.PlayerData.citizenid })
+    if not result[1] then
+        return false
+    elseif result[1] then
+        return {true, result.taskAmount}
+    end
 
+end
 
-RegisterServerEvent('communityservice:checkPlayerCommunityService')
-AddEventHandler('communityservice:checkPlayerCommunityService', function()
-	local Ply = Player(source)
-	local stillhastasksleft = Ply.state.hasTasksLeft[1]
-	local tasksLeft = Ply.state.hasTasksLeft[2]
-	if stillhastasksleft and tasksLeft ~= 0 then 
-		SentanceCommunityService(source, Ply.state.hasTasksLeft[2])
-		print('you have been send back to community service for you remaining tasks')
-	end 
-end)
+SentancePlayerToCommunityService = function(playerId, tasksAmount)
+    local Player = QBCore.Functions.GetPlayer(playerId)
+    if Player then 
+        local gangs = exports.oxmysql:executeSync('SELECT * FROM player_communityservice WHERE citizenid = ?', { Player.PlayerData.citizenid })
+        if not gangs[1] then
+            exports.oxmysql:insert('INSERT INTO player_communityservice (license, citizenid, taskAmount) VALUES (?, ?, ?)', {
+                Player.PlayerData.license,
+                Player.PlayerData.citizenid,
+                tasksAmount
+            })
+            TriggerClientEvent('communityservice:client:assignService', playerId, tasksAmount)
+        elseif gangs[1] then
+            print('this player already has community service')
+        end
+    else
+        print('invalid player id')
+    end
+end
+
+RemovePlayerCommunityService = function(playerId)
+    local Player = QBCore.Functions.GetPlayer(playerId)
+    if Player then 
+        exports.oxmysql:execute('DELETE FROM player_communityservice WHERE citizenid = ?', {
+            Player.PlayerData.citizenid
+        })
+    else 
+        print('invalid player id')
+    end
+end
+
+UpdatePlayerCommunityService = function(playerId, newTaskAmount)
+    local Player = QBCore.Functions.GetPlayer(playerId)
+    if Player then 
+        if CheckIfHasCommunityService(Player) then 
+            exports.oxmysql:execute('UPDATE player_communityservice SET taskAmount = ? WHERE citizenid = ?', {newTaskAmount, Player.PlayerData.citizenid})
+        end
+    else
+        print('invalid player id')
+    end
+end
+
 
 RegisterServerEvent('communityservice:updateTasks')
-AddEventHandler('communityservice:updateTasks', function(actionsRemaining)
-	local src = source
-	local Ply = Player(source)
-	Ply.state:set('hasTasksLeft', {Ply.state.hasTasksLeft[1], actionsRemaining}, true)
-
-
+AddEventHandler('communityservice:updateTasks', function(tasks)
+    UpdatePlayerCommunityService(source, tasks)
 end)
-
-RegisterCommand('checkshitters',function(source)
-	print(json.encode(CheckPlayerCommunityService(source)))
-end, false)
-
-CheckPlayerCommunityService = function(source)
-	local Ply = Player(source)
-	return Ply.state.hasTasksLeft
-end
-
-SentanceCommunityService = function(src, tasks_amount)
-	local Ply = Player(src)
-	Ply.state:set('hasTasksLeft', {true, tasks_amount}, true)
-
-	TriggerClientEvent('communityservice:client:assignService', src, tonumber(tasks_amount))
-end	
-
-ReleaseFromService = function(src)
-	local Ply = Player(src)
-	Ply.state:set('hasTasksLeft', {false, 0}, true)
-	TriggerClientEvent('communityservice:client:finishService', src)
-end
-
 
 RegisterServerEvent('communityservice:server:finishService')
 AddEventHandler('communityservice:server:finishService', function()
-	ReleaseFromService(source)
+    RemovePlayerCommunityService(source)
+end)
+
+RegisterServerEvent('communityservice:checkPlayerCommunityService')
+AddEventHandler('communityservice:checkPlayerCommunityService', function()
+    local _source = source
+    print(json.encode(CheckIfHasCommunityService(_source)[2]))
+    -- if (json.encode(CheckIfHasCommunityService(source))[2]) then
+        --  print('PUT IN SERVICE LELS')
+    -- end
+end)
+
+
+QBCore.Functions.CreateCallback('communityservice:checkData', function(source, cb)
+    local Player = QBCore.Functions.GetPlayer(source)
+    local result = exports.oxmysql:executeSync('SELECT * FROM player_communityservice WHERE citizenid = ?', { Player.PlayerData.citizenid })
+    if not result[1] then
+        cb(false)
+    elseif result[1] then
+        print("RETURNING THIS BULLSHIT", result[1].taskAmount)
+        cb({true, result[1].taskAmount})
+    end
 end)

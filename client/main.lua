@@ -12,8 +12,17 @@ TaskLocations = {
 	{ type = "sweep", coords = vector3(145.2, -993.8, 28.4), text = 'Dirty Floor, sweep it up!', textColor = {255, 255, 255} },
 	{ type = "sweep", coords = vector3(200.1, -1017.2, 28.3), text = 'Dirty Floor, sweep it up!', textColor = {255, 255, 255} },
 	{ type = "clean", coords = vector3(173.0, -1007.7, 29.4), text = 'Dirty Meeter, Scrub it with a cloth!', textColor = {255, 255, 255} },
-	{ type = "clean", coords = vector3(175.6, -986.0, 31.0), text = 'Dirty Wall, wipe it down!', textColor = {255, 255, 255} },
+	{ type = "cleanfront", coords = vector3(175.6, -986.0, 31.0), text = 'Dirty Wall, wipe it down!', textColor = {255, 255, 255} },
 }
+
+
+AddEventHandler('QBCore:Client:OnPlayerLoaded', function() -- change this to watever
+    QBCore.Functions.TriggerCallback('communityservice:checkData', function(data)
+        if(data[1]) then
+             TriggerEvent('communityservice:client:assignService', data[2])
+        end
+    end)
+end)
   
 FillTasksArray = function(last_action)
     while #availableActions < 1 do
@@ -76,13 +85,16 @@ Citizen.CreateThread(function()
                         RemoveTask(task_inProgress)
                         FillTasksArray(task_inProgress)
                         disable_actions = false
-
+                        
+                        DoTask(task_inProgress.type)
+                        Wait(5000)
                         TasksRemaining = TasksRemaining - 1
 
                         if TasksRemaining == 0 then 
-                            TriggerServerEvent('communityservice:server:finishService')
+                            TriggerEvent('client:communityservice:finishService')
+                            Notification("You have done all of your tasks! Your Finished!")
                         elseif TasksRemaining ~= 0 then 
-                            Notification("You have: " .. TasksRemaining .. ' lasks left')
+                            Notification("You have: " .. TasksRemaining .. ' lasks left, Go find your next task!')
                             TriggerServerEvent('communityservice:updateTasks', TasksRemaining)
                         end
         
@@ -95,6 +107,94 @@ Citizen.CreateThread(function()
         end
     end
 end)
+
+RegisterNetEvent('client:communityservice:finishService')
+AddEventHandler('client:communityservice:finishService', function()
+    TasksRemaining = 0
+    TriggerServerEvent('communityservice:server:finishService')
+end)
+
+DoTask = function(type)
+    if type == 'clean' then
+        local hash = GetHashKey("prop_sponge_01")
+        RequestModel(hash)
+        while not HasModelLoaded(hash) do
+            Citizen.Wait(100)
+            RequestModel(hash)
+        end
+        local prop = CreateObject(hash, GetEntityCoords(PlayerPedId()), true, true, true)
+        AttachEntityToEntity(prop, PlayerPedId(), GetPedBoneIndex(PlayerPedId(), 28422), 0.0, 0.0, -0.01, 90.0, 0.0, 0.0, true, true, false, false, 1, true)
+        QBCore.Functions.Progressbar("clean_comserv", "Wiping down..", 5000, false, true, {
+            disableMovement = true,
+            disableCarMovement = false,
+            disableMouse = false,
+            disableCombat = true,
+        }, {
+            animDict = 'timetable@floyd@clean_kitchen@base',
+            anim = 'base',
+            flags = 49,
+        }, {}, {}, function() -- Done
+            StopAnimTask(PlayerPedId(), 'timetable@floyd@clean_kitchen@base', "base", 1.0)
+            DeleteObject(prop)
+        end, function() -- Cancel
+            StopAnimTask(PlayerPedId(), 'timetable@floyd@clean_kitchen@base', "base", 1.0)
+            DeleteObject(prop)
+        end)         
+    elseif type == 'cleanfront' then 
+
+        local hash = GetHashKey("prop_sponge_01")
+        RequestModel(hash)
+        while not HasModelLoaded(hash) do
+            Citizen.Wait(100)
+            RequestModel(hash)
+        end
+        local prop = CreateObject(hash, GetEntityCoords(PlayerPedId()), true, true, true)
+        AttachEntityToEntity(prop, PlayerPedId(), GetPedBoneIndex(PlayerPedId(), 28422), 0.0, 0.0, 0.0, 116.0, 8.0, 0.0, true, true, false, false, 1, true)
+        QBCore.Functions.Progressbar("cleanfront_comserv", "Wiping down..", 5000, false, true, {
+            disableMovement = true,
+            disableCarMovement = false,
+            disableMouse = false,
+            disableCombat = true,
+        }, {
+            animDict = 'amb@world_human_maid_clean@',
+            anim = 'idle_a',
+            flags = 16,
+        }, {}, {}, function() -- Done
+            StopAnimTask(PlayerPedId(), 'amb@world_human_maid_clean@', "idle_a", 1.0)
+            DeleteObject(prop)
+        end, function() -- Cancel
+            StopAnimTask(PlayerPedId(), 'amb@world_human_maid_clean@', "idle_a", 1.0)
+            DeleteObject(prop)
+        end) 
+    elseif type == 'sweep' then
+        local hash = GetHashKey("prop_tool_broom")
+        RequestModel(hash)
+        while not HasModelLoaded(hash) do
+            Citizen.Wait(100)
+            RequestModel(hash)
+        end
+        local prop = CreateObject(hash, GetEntityCoords(PlayerPedId()), true, true, true)
+        AttachEntityToEntity(prop, PlayerPedId(), GetPedBoneIndex(PlayerPedId(), 28422), -0.005,0.0,0.0,360.0,360.0,0.0, true, true, false, false, 0, true)
+        QBCore.Functions.Progressbar("sweep_comserv", "Wiping down..", 5000, false, true, {
+            disableMovement = true,
+            disableCarMovement = false,
+            disableMouse = false,
+            disableCombat = true,
+        }, {
+            animDict = 'amb@world_human_janitor@male@idle_a',
+            anim = 'idle_a',
+            flags = 49,
+        }, {}, {}, function() -- Done
+            StopAnimTask(PlayerPedId(), 'amb@world_human_janitor@male@idle_a', "idle_a", 1.0)
+            DeleteObject(prop)
+
+        end, function() -- Cancel
+            StopAnimTask(PlayerPedId(), 'amb@world_human_janitor@male@idle_a', "idle_a", 1.0)
+            DeleteObject(prop)
+        end) 
+    end
+
+end
 
 RemoveTask = function(action)
     local action_position = -1
