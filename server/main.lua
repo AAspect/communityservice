@@ -83,6 +83,7 @@ UpdatePlayerCommunityService = function(playerId, newTaskAmount)
     local Player = QBCore.Functions.GetPlayer(playerId)
     if Player then 
         if CheckIfHasCommunityService(Player) then 
+            TriggerClientEvent('client:communityservice:updateTaskamount', playerId, newTaskAmount)
             exports.oxmysql:execute('UPDATE player_communityservice SET taskAmount = ? WHERE citizenid = ?', {newTaskAmount, Player.PlayerData.citizenid})
         end
     else
