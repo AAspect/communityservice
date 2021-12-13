@@ -78,46 +78,45 @@ legion_square:onPlayerInOut(function(isPointInside)
     if isPointInside and isInComserv then
         isinLegion = true
         CreateThread(function()
-            while isinLegion do
+            while isinLegion and TasksRemaining > 0 and isInComserv do
                 :: restart_thread ::
                 Citizen.Wait(1)
 
-                if TasksRemaining > 0 and isInComserv then
-                    local pCoords = GetEntityCoords(PlayerPedId())
-                
+                local pCoords = GetEntityCoords(PlayerPedId())
+            
 
-                    DrawAllAvailableTasks()
+                DrawAllAvailableTasks()
 
 
-                    for i = 1, #availableActions do
-                        local dist = #(pCoords - availableActions[i].coords)
+                for i = 1, #availableActions do
+                    local dist = #(pCoords - availableActions[i].coords)
 
-                        if dist < 1.5 then
-                            if(IsControlJustReleased(1, 38))then
-                                task_inProgress = availableActions[i]
-                                RemoveTask(task_inProgress)
-                                FillTasksArray(task_inProgress)
-                                disable_actions = false
-                                
-                                DoTask(task_inProgress.type)
-                                Wait(5000) -- Amount of time the task takes
-                                TasksRemaining = TasksRemaining - 1
+                    if dist < 1.5 then
+                        if(IsControlJustReleased(1, 38))then
+                            
+                            task_inProgress = availableActions[i]
+                            RemoveTask(task_inProgress)
+                            FillTasksArray(task_inProgress)
+                            disable_actions = false
+                            
+                            DoTask(task_inProgress.type)
+                            Wait(5000) -- Amount of time the task takes
+                            TasksRemaining = TasksRemaining - 1
 
-                                if TasksRemaining == 0 then 
-                                    TriggerEvent('client:communityservice:finishService')
-                                    Notification("You have done all of your tasks! Your Finished!")
-                                elseif TasksRemaining ~= 0 then 
-                                    Notification("You have: " .. TasksRemaining .. ' lasks left, Go find your next task!')
-                                    TriggerServerEvent('communityservice:updateTasks', TasksRemaining)
-                                end
-                
-                                goto restart_thread
+                            if TasksRemaining == 0 then 
+                                TriggerEvent('client:communityservice:finishService')
+                                Notification("You have done all of your tasks! Your Finished!")
+                                break
+                            elseif TasksRemaining ~= 0 then 
+                                Notification("You have: " .. TasksRemaining .. ' lasks left, Go find your next task!')
+                                TriggerServerEvent('communityservice:updateTasks', TasksRemaining)
                             end
+            
+                            goto restart_thread
                         end
                     end
-                else
-                    Citizen.Wait(1000)
                 end
+
             end
         end)
     elseif not isPointInside and isInComserv then 
